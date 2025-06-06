@@ -1,16 +1,22 @@
 "use client";
+
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   RoundedBox,
   CameraControls,
   Environment,
-  useGLTF,
   ContactShadows,
   KeyboardControls,
 } from "@react-three/drei";
 import { Suspense, useEffect, useState, useRef } from "react";
 import ClawCamera from "@/component/ClawCamera";
+
+// 動態載入 ClawModel，禁用 SSR
+const ClawModel = dynamic(() => import("@/component/ClawModel"), {
+  ssr: false,
+});
 
 function Modal({ title, text, buttonText, onClose }) {
   return (
@@ -26,43 +32,6 @@ function Modal({ title, text, buttonText, onClose }) {
         </button>
       </div>
     </div>
-  );
-}
-
-function ClawModel({ clawPos, isClawDown, isWin }) {
-  const clawModel = useGLTF("/claw.glb"); // <-- 使用公開路徑
-  const clawRef = useRef();
-
-  useFrame(() => {
-    if (!clawRef.current) return;
-
-    const baseY = 2.85;
-    const clawY = baseY + clawPos.y;
-
-    clawRef.current.traverse((child) => {
-      if (child.name === "claw") {
-        child.position.set(clawPos.x, clawY, clawPos.z);
-      }
-      if (child.name === "clawBase") {
-        child.position.set(clawPos.x, baseY, clawPos.z);
-      }
-      if (child.name === "track") {
-        child.position.set(0, baseY, clawPos.z);
-      }
-      if (child.name === "bear") {
-        child.visible = isWin;
-      }
-    });
-  });
-
-  return (
-    <primitive
-      ref={clawRef}
-      object={clawModel.scene}
-      scale={[0.6, 0.6, 0.6]}
-      position={[0, 0, 0]}
-      rotation={[0, 0, 0]}
-    />
   );
 }
 
