@@ -1,15 +1,18 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import {
   Environment,
   ContactShadows,
   CameraControls,
-  useGLTF,
   KeyboardControls,
 } from "@react-three/drei";
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, useState } from "react";
+import dynamic from "next/dynamic";
 import ClawCamera from "./ClawCamera";
+
+// Lazy-load避免SSR錯誤
+const ClawModel = dynamic(() => import("./ClawModel"), { ssr: false });
 
 function Modal({ title, text, buttonText, onClose }) {
   return (
@@ -25,43 +28,6 @@ function Modal({ title, text, buttonText, onClose }) {
         </button>
       </div>
     </div>
-  );
-}
-
-function ClawModel({ clawPos, isClawDown, isWin }) {
-  const clawModel = useGLTF("/claw.glb");
-  const clawRef = useRef();
-
-  useFrame(() => {
-    if (!clawRef.current) return;
-
-    const baseY = 2.85;
-    const clawY = baseY + clawPos.y;
-
-    clawRef.current.traverse((child) => {
-      if (child.name === "claw") {
-        child.position.set(clawPos.x, clawY, clawPos.z);
-      }
-      if (child.name === "clawBase") {
-        child.position.set(clawPos.x, baseY, clawPos.z);
-      }
-      if (child.name === "track") {
-        child.position.set(0, baseY, clawPos.z);
-      }
-      if (child.name === "bear") {
-        child.visible = isWin;
-      }
-    });
-  });
-
-  return (
-    <primitive
-      ref={clawRef}
-      object={clawModel.scene}
-      scale={[0.6, 0.6, 0.6]}
-      position={[0, 0, 0]}
-      rotation={[0, 0, 0]}
-    />
   );
 }
 
@@ -112,7 +78,7 @@ export default function ClawScene() {
           { name: "backward", keys: ["ArrowDown", "s", "S"] },
           { name: "left", keys: ["ArrowLeft", "a", "A"] },
           { name: "right", keys: ["ArrowRight", "d", "D"] },
-          { name: "jump", keys: ["Space"] },
+          { name: "jump", keys: [" "] },
         ]}
       >
         <Canvas>
@@ -139,11 +105,11 @@ export default function ClawScene() {
           </Suspense>
 
           <Environment
-            background={true}
+            background
             backgroundBlurriness={0.08}
             backgroundIntensity={1}
             environmentIntensity={1}
-            preset={"park"}
+            preset="park"
           />
 
           <ContactShadows

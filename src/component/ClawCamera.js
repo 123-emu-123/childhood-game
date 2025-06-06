@@ -5,7 +5,13 @@ import { useFrame } from "@react-three/fiber";
 import { PerspectiveCamera, useKeyboardControls } from "@react-three/drei";
 import gsap from "gsap";
 
-function ClawCamera({ clawPos, setClawPos, isClawDown, setIsClawDown, onFinish }) {
+export default function ClawCamera({
+  clawPos,
+  setClawPos,
+  isClawDown,
+  setIsClawDown,
+  onFinish,
+}) {
   const camRef = useRef();
   const [, getKeys] = useKeyboardControls();
 
@@ -31,9 +37,7 @@ function ClawCamera({ clawPos, setClawPos, isClawDown, setIsClawDown, onFinish }
       }
 
       if (jump) {
-        const random = Math.random();
-        const isWin = random < 0.5;
-
+        const isWin = Math.random() < 0.5;
         setIsClawDown(true);
 
         const animationTarget = { y: clawPos.y };
@@ -68,5 +72,3 @@ function ClawCamera({ clawPos, setClawPos, isClawDown, setIsClawDown, onFinish }
 
   return <PerspectiveCamera ref={camRef} makeDefault position={[0, 1, 3]} />;
 }
-
-export default ClawCamera;
