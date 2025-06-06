@@ -1,23 +1,22 @@
 "use client";
-
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import {
-  RoundedBox,
   CameraControls,
   Environment,
   ContactShadows,
   KeyboardControls,
 } from "@react-three/drei";
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, useState } from "react";
 import ClawCamera from "@/component/ClawCamera";
 
-// 動態載入 ClawModel，禁用 SSR
+// ✅ Dynamic import 避免 SSR 出錯
 const ClawModel = dynamic(() => import("@/component/ClawModel"), {
   ssr: false,
 });
 
+// ✅ Modal 元件
 function Modal({ title, text, buttonText, onClose }) {
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-[#00000080] flex items-center justify-center z-50">
@@ -35,6 +34,7 @@ function Modal({ title, text, buttonText, onClose }) {
   );
 }
 
+// ✅ 主畫面元件
 export default function Home() {
   const [clawPos, setClawPos] = useState({ x: 0, y: 0, z: 0 });
   const [isClawDown, setIsClawDown] = useState(false);
@@ -86,6 +86,7 @@ export default function Home() {
         ]}
       >
         <Canvas>
+          {/* 光源 */}
           <ambientLight intensity={Math.PI / 2} />
           <spotLight
             position={[10, 10, 10]}
@@ -100,6 +101,7 @@ export default function Home() {
             intensity={Math.PI}
           />
 
+          {/* 模型與相機 */}
           <Suspense fallback={null}>
             <ClawModel
               clawPos={clawPos}
