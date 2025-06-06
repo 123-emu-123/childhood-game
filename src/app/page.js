@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
 import {
   CameraControls,
@@ -10,9 +8,11 @@ import {
   KeyboardControls,
   useGLTF,
 } from "@react-three/drei";
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import ClawCamera from "../component/ClawCamera";
 
+// ✅ Modal UI
 function Modal({ title, text, buttonText, onClose }) {
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-[#00000080] flex items-center justify-center z-50">
@@ -30,45 +30,48 @@ function Modal({ title, text, buttonText, onClose }) {
   );
 }
 
-// ✅ 動態載入 ClawModel，避免 SSR 載入 claw.glb
-const ClawModel = dynamic(() =>
-  Promise.resolve(function ClawModel({ clawPos, isClawDown, isWin }) {
-    const { scene } = useGLTF("/claw.glb");
-    const clawRef = useRef();
+// ✅ 包裝 ClawModel 為 dynamic 並避免 SSR 執行 useGLTF()
+const ClawModel = dynamic(() => Promise.resolve(ClawModelComponent), {
+  ssr: false,
+});
 
-    useEffect(() => {
-      if (!clawRef.current) return;
+// ✅ 原本的 ClawModel 拉到這裡變成一個純函式
+function ClawModelComponent({ clawPos, isClawDown, isWin }) {
+  const { scene } = useGLTF("/claw.glb");
+  const clawRef = useRef();
 
-      const baseY = 2.85;
-      const clawY = baseY + clawPos.y;
+  useEffect(() => {
+    if (!clawRef.current) return;
 
-      clawRef.current.traverse((child) => {
-        if (child.name === "claw") {
-          child.position.set(clawPos.x, clawY, clawPos.z);
-        }
-        if (child.name === "clawBase") {
-          child.position.set(clawPos.x, baseY, clawPos.z);
-        }
-        if (child.name === "track") {
-          child.position.set(0, baseY, clawPos.z);
-        }
-        if (child.name === "bear") {
-          child.visible = isWin;
-        }
-      });
-    }, [clawPos, isWin]);
+    const baseY = 2.85;
+    const clawY = baseY + clawPos.y;
 
-    return (
-      <primitive
-        ref={clawRef}
-        object={scene}
-        scale={[0.6, 0.6, 0.6]}
-        position={[0, 0, 0]}
-        rotation={[0, 0, 0]}
-      />
-    );
-  }), { ssr: false }
-);
+    clawRef.current.traverse((child) => {
+      if (child.name === "claw") {
+        child.position.set(clawPos.x, clawY, clawPos.z);
+      }
+      if (child.name === "clawBase") {
+        child.position.set(clawPos.x, baseY, clawPos.z);
+      }
+      if (child.name === "track") {
+        child.position.set(0, baseY, clawPos.z);
+      }
+      if (child.name === "bear") {
+        child.visible = isWin;
+      }
+    });
+  }, [clawPos, isWin]);
+
+  return (
+    <primitive
+      ref={clawRef}
+      object={scene}
+      scale={[0.6, 0.6, 0.6]}
+      position={[0, 0, 0]}
+      rotation={[0, 0, 0]}
+    />
+  );
+}
 
 export default function Home() {
   const [clawPos, setClawPos] = useState({ x: 0, y: 0, z: 0 });
@@ -143,22 +146,8 @@ export default function Home() {
             />
           </Suspense>
 
-          <Environment
-            background={true}
-            backgroundBlurriness={0.08}
-            backgroundIntensity={1}
-            environmentIntensity={1}
-            preset={"park"}
-          />
-
-          <ContactShadows
-            opacity={1}
-            scale={10}
-            blur={10}
-            far={10}
-            resolution={256}
-            color="#DDDDDD"
-          />
+          <Environment preset="park" background backgroundIntensity={1} />
+          <ContactShadows opacity={1} scale={10} blur={10} far={10} />
 
           {!showStartModal && (
             <ClawCamera
