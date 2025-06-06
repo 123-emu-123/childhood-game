@@ -1,18 +1,21 @@
 "use client";
-
-import { Canvas } from "@react-three/fiber";
+import dynamic from "next/dynamic";
+import { Canvas, useFrame } from "@react-three/fiber";
 import {
-  CameraControls,
   Environment,
   ContactShadows,
   KeyboardControls,
+  CameraControls,
   useGLTF,
 } from "@react-three/drei";
-import { Suspense, useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { Suspense, useRef, useState } from "react";
 import ClawCamera from "../component/ClawCamera";
 
-// ✅ Modal UI
+// 動態載入 ClawModel，避免 SSR 問題
+const ClawModel = dynamic(() => Promise.resolve(ClawModelComponent), {
+  ssr: false,
+});
+
 function Modal({ title, text, buttonText, onClose }) {
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-[#00000080] flex items-center justify-center z-50">
@@ -30,19 +33,13 @@ function Modal({ title, text, buttonText, onClose }) {
   );
 }
 
-// ✅ 包裝 ClawModel 為 dynamic 並避免 SSR 執行 useGLTF()
-const ClawModel = dynamic(() => Promise.resolve(ClawModelComponent), {
-  ssr: false,
-});
-
-// ✅ 原本的 ClawModel 拉到這裡變成一個純函式
+// 包含 useGLTF 的元件，需要避免 SSR
 function ClawModelComponent({ clawPos, isClawDown, isWin }) {
-  const { scene } = useGLTF("/claw.glb");
+  const clawModel = useGLTF("/claw.glb");
   const clawRef = useRef();
 
-  useEffect(() => {
+  useFrame(() => {
     if (!clawRef.current) return;
-
     const baseY = 2.85;
     const clawY = baseY + clawPos.y;
 
@@ -60,12 +57,12 @@ function ClawModelComponent({ clawPos, isClawDown, isWin }) {
         child.visible = isWin;
       }
     });
-  }, [clawPos, isWin]);
+  });
 
   return (
     <primitive
       ref={clawRef}
-      object={scene}
+      object={clawModel.scene}
       scale={[0.6, 0.6, 0.6]}
       position={[0, 0, 0]}
       rotation={[0, 0, 0]}
@@ -146,8 +143,22 @@ export default function Home() {
             />
           </Suspense>
 
-          <Environment preset="park" background backgroundIntensity={1} />
-          <ContactShadows opacity={1} scale={10} blur={10} far={10} />
+          <Environment
+            background={true}
+            backgroundBlurriness={0.08}
+            backgroundIntensity={1}
+            environmentIntensity={1}
+            preset={"park"}
+          />
+
+          <ContactShadows
+            opacity={1}
+            scale={10}
+            blur={10}
+            far={10}
+            resolution={256}
+            color="#DDDDDD"
+          />
 
           {!showStartModal && (
             <ClawCamera
