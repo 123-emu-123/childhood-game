@@ -1,18 +1,17 @@
 "use client";
 import dynamic from "next/dynamic";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import {
   Environment,
   ContactShadows,
   KeyboardControls,
   CameraControls,
-  useGLTF,
 } from "@react-three/drei";
-import { Suspense, useRef, useState } from "react";
-import ClawCamera from "../component/ClawCamera";
+import { Suspense, useRef, useState, useEffect } from "react";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-// 動態載入 ClawModel，避免 SSR 問題
-const ClawModel = dynamic(() => Promise.resolve(ClawModelComponent), {
+// 动态导入 ClawCamera，避免 SSR 问题
+const ClawCamera = dynamic(() => import("../component/ClawCamera"), {
   ssr: false,
 });
 
@@ -33,13 +32,111 @@ function Modal({ title, text, buttonText, onClose }) {
   );
 }
 
-// 包含 useGLTF 的元件，需要避免 SSR
-function ClawModelComponent({ clawPos, isClawDown, isWin }) {
-  const clawModel = useGLTF("/claw.glb");
+// 使用基础几何体的爪子机组件
+function BasicClawModel({ clawPos, isClawDown, isWin }) {
   const clawRef = useRef();
+  const bearRef = useRef();
 
   useFrame(() => {
-    if (!clawRef.current) return;
+    if (clawRef.current) {
+      const baseY = 2.85;
+      const clawY = baseY + clawPos.y;
+      clawRef.current.position.set(clawPos.x, clawY, clawPos.z);
+    }
+    
+    if (bearRef.current) {
+      bearRef.current.visible = isWin;
+      if (isWin) {
+        bearRef.current.position.set(clawPos.x, 2.85 + clawPos.y - 0.4, clawPos.z);
+      }
+    }
+  });
+
+  return (
+    <group>
+      {/* 轨道 */}
+      <mesh position={[0, 2.85, clawPos.z]}>
+        <boxGeometry args={[2, 0.1, 0.1]} />
+        <meshStandardMaterial color="#8B4513" />
+      </mesh>
+      
+      {/* 爪子基座 */}
+      <mesh position={[clawPos.x, 2.85, clawPos.z]}>
+        <cylinderGeometry args={[0.05, 0.05, 0.3]} />
+        <meshStandardMaterial color="#696969" />
+      </mesh>
+      
+      {/* 爪子 */}
+      <mesh ref={clawRef} position={[clawPos.x, 2.85 + clawPos.y, clawPos.z]}>
+        <boxGeometry args={[0.3, 0.2, 0.3]} />
+        <meshStandardMaterial color="#F7CB82" />
+      </mesh>
+      
+      {/* 爪子的钩子 */}
+      <mesh position={[clawPos.x, 2.85 + clawPos.y - 0.15, clawPos.z]}>
+        <boxGeometry args={[0.1, 0.1, 0.1]} />
+        <meshStandardMaterial color="#D2691E" />
+      </mesh>
+      
+      {/* 兔兔 (获胜时显示) */}
+      <mesh ref={bearRef} visible={false}>
+        <sphereGeometry args={[0.15]} />
+        <meshStandardMaterial color="#FFB6C1" />
+      </mesh>
+      
+      {/* 兔兔的耳朵 */}
+      {isWin && (
+        <group position={[clawPos.x, 2.85 + clawPos.y - 0.2, clawPos.z]}>
+          <mesh position={[0.08, 0.1, 0]}>
+            <sphereGeometry args={[0.05]} />
+            <meshStandardMaterial color="#FFB6C1" />
+          </mesh>
+          <mesh position={[-0.08, 0.1, 0]}>
+            <sphereGeometry args={[0.05]} />
+            <meshStandardMaterial color="#FFB6C1" />
+          </mesh>
+        </group>
+      )}
+      
+      {/* 机器外壳 */}
+      <mesh position={[0, 1.5, 0]}>
+        <boxGeometry args={[2.5, 3, 1.5]} />
+        <meshStandardMaterial color="#E6E6FA" transparent opacity={0.3} />
+      </mesh>
+      
+      {/* 底座 */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[2.8, 0.2, 1.8]} />
+        <meshStandardMaterial color="#4682B4" />
+      </mesh>
+    </group>
+  );
+}
+
+// 尝试加载 GLTF 模型的组件
+function GLTFClawModel({ clawPos, isClawDown, isWin }) {
+  const [gltf, setGltf] = useState(null);
+  const [error, setError] = useState(false);
+  const clawRef = useRef();
+
+  useEffect(() => {
+    const loader = new GLTFLoader();
+    loader.load(
+      "/claw.glb",
+      (loadedGltf) => {
+        setGltf(loadedGltf);
+      },
+      undefined,
+      (error) => {
+        console.warn("GLTF loading failed, using basic model:", error);
+        setError(true);
+      }
+    );
+  }, []);
+
+  useFrame(() => {
+    if (!clawRef.current || !gltf) return;
+    
     const baseY = 2.85;
     const clawY = baseY + clawPos.y;
 
@@ -59,10 +156,15 @@ function ClawModelComponent({ clawPos, isClawDown, isWin }) {
     });
   });
 
+  // 如果加载失败或还在加载中，使用基础模型
+  if (error || !gltf) {
+    return <BasicClawModel clawPos={clawPos} isClawDown={isClawDown} isWin={isWin} />;
+  }
+
   return (
     <primitive
       ref={clawRef}
-      object={clawModel.scene}
+      object={gltf.scene}
       scale={[0.6, 0.6, 0.6]}
       position={[0, 0, 0]}
       rotation={[0, 0, 0]}
@@ -70,12 +172,23 @@ function ClawModelComponent({ clawPos, isClawDown, isWin }) {
   );
 }
 
+// 动态导入主要的爪子模型组件
+const ClawModel = dynamic(() => Promise.resolve(GLTFClawModel), {
+  ssr: false,
+});
+
 export default function Home() {
   const [clawPos, setClawPos] = useState({ x: 0, y: 0, z: 0 });
   const [isClawDown, setIsClawDown] = useState(false);
   const [showStartModal, setShowStartModal] = useState(true);
   const [showResultModal, setShowResultModal] = useState(false);
   const [isWin, setIsWin] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // 确保只在客户端渲染
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleJumpResult = (result) => {
     setIsWin(result);
@@ -90,6 +203,19 @@ export default function Home() {
     setShowResultModal(false);
     setIsWin(false);
   };
+
+  // 如果不是客户端，显示简单的加载界面
+  if (!isClient) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-gray-700 mb-4">拯救兔兔大作戰</div>
+          <div className="text-lg text-gray-600 mb-6">遊戲載入中...</div>
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-screen relative">
@@ -135,7 +261,7 @@ export default function Home() {
             intensity={Math.PI}
           />
 
-          <Suspense fallback={null}>
+          <Suspense fallback={<BasicClawModel clawPos={clawPos} isClawDown={isClawDown} isWin={isWin} />}>
             <ClawModel
               clawPos={clawPos}
               isClawDown={isClawDown}
