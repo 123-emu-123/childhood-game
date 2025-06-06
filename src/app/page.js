@@ -1,54 +1,17 @@
 "use client";
 
+import Image from "next/image";
+import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
 import {
+  CameraControls,
   Environment,
   ContactShadows,
-  CameraControls,
   KeyboardControls,
   useGLTF,
 } from "@react-three/drei";
-import { Suspense, useState, useRef } from "react";
-import ClawCamera from  "../component/ClawCamera";
-import { useFrame } from "@react-three/fiber";
-
-// ClawModel 直接定義在這個檔案中
-function ClawModel({ clawPos, isClawDown, isWin }) {
-  const clawModel = useGLTF("/claw.glb");
-  const clawRef = useRef();
-
-  useFrame(() => {
-    if (!clawRef.current) return;
-
-    const baseY = 2.85;
-    const clawY = baseY + clawPos.y;
-
-    clawRef.current.traverse((child) => {
-      if (child.name === "claw") {
-        child.position.set(clawPos.x, clawY, clawPos.z);
-      }
-      if (child.name === "clawBase") {
-        child.position.set(clawPos.x, baseY, clawPos.z);
-      }
-      if (child.name === "track") {
-        child.position.set(0, baseY, clawPos.z);
-      }
-      if (child.name === "bear") {
-        child.visible = isWin;
-      }
-    });
-  });
-
-  return (
-    <primitive
-      ref={clawRef}
-      object={clawModel.scene}
-      scale={[0.6, 0.6, 0.6]}
-      position={[0, 0, 0]}
-      rotation={[0, 0, 0]}
-    />
-  );
-}
+import { Suspense, useEffect, useState, useRef } from "react";
+import ClawCamera from "../component/ClawCamera";
 
 function Modal({ title, text, buttonText, onClose }) {
   return (
@@ -66,6 +29,46 @@ function Modal({ title, text, buttonText, onClose }) {
     </div>
   );
 }
+
+// ✅ 動態載入 ClawModel，避免 SSR 載入 claw.glb
+const ClawModel = dynamic(() =>
+  Promise.resolve(function ClawModel({ clawPos, isClawDown, isWin }) {
+    const { scene } = useGLTF("/claw.glb");
+    const clawRef = useRef();
+
+    useEffect(() => {
+      if (!clawRef.current) return;
+
+      const baseY = 2.85;
+      const clawY = baseY + clawPos.y;
+
+      clawRef.current.traverse((child) => {
+        if (child.name === "claw") {
+          child.position.set(clawPos.x, clawY, clawPos.z);
+        }
+        if (child.name === "clawBase") {
+          child.position.set(clawPos.x, baseY, clawPos.z);
+        }
+        if (child.name === "track") {
+          child.position.set(0, baseY, clawPos.z);
+        }
+        if (child.name === "bear") {
+          child.visible = isWin;
+        }
+      });
+    }, [clawPos, isWin]);
+
+    return (
+      <primitive
+        ref={clawRef}
+        object={scene}
+        scale={[0.6, 0.6, 0.6]}
+        position={[0, 0, 0]}
+        rotation={[0, 0, 0]}
+      />
+    );
+  }), { ssr: false }
+);
 
 export default function Home() {
   const [clawPos, setClawPos] = useState({ x: 0, y: 0, z: 0 });
