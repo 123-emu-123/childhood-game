@@ -1,13 +1,10 @@
-// component/ClawModel.js
-"use client";
-
 import { useGLTF } from "@react-three/drei";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 
 export default function ClawModel({ clawPos, isClawDown, isWin }) {
-  const clawModel = useGLTF("/claw.glb");
   const clawRef = useRef();
+  const { scene } = useGLTF("/claw.glb"); // ✅ 正確路徑
 
   useFrame(() => {
     if (!clawRef.current) return;
@@ -34,7 +31,7 @@ export default function ClawModel({ clawPos, isClawDown, isWin }) {
   return (
     <primitive
       ref={clawRef}
-      object={clawModel.scene}
+      object={scene}
       scale={[0.6, 0.6, 0.6]}
       position={[0, 0, 0]}
       rotation={[0, 0, 0]}
