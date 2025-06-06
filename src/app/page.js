@@ -1,36 +1,20 @@
 "use client";
-import Image from "next/image";
-import { Canvas, useFrame } from "@react-three/fiber";
+
+import { Canvas } from "@react-three/fiber";
 import {
-  RoundedBox,
-  CameraControls,
   Environment,
-  useGLTF,
   ContactShadows,
+  CameraControls,
   KeyboardControls,
+  useGLTF,
 } from "@react-three/drei";
-import { Suspense, useEffect, useState, useRef } from "react";
-import ClawCamera from "../component/ClawCamera";
+import { Suspense, useState, useRef } from "react";
+import ClawCamera from  "../component/ClawCamera";
+import { useFrame } from "@react-three/fiber";
 
-function Modal({ title, text, buttonText, onClose }) {
-  return (
-    <div className="fixed top-0 left-0 w-full h-full bg-[#00000080] flex items-center justify-center z-50">
-      <div className="bg-[#ECEAE1] rounded-2xl shadow-lg p-8 max-w-sm text-center border-4 border-[#CBD7E3]">
-        <h2 className="text-xl font-bold text-[#A77653] mb-4">{title}</h2>
-        <p className="text-[#788DAC] whitespace-pre-line mb-6">{text}</p>
-        <button
-          onClick={onClose}
-          className="bg-[#F7CB82] hover:bg-[#D58E66] text-[#A77653] font-semibold px-4 py-2 rounded-full transition"
-        >
-          {buttonText}
-        </button>
-      </div>
-    </div>
-  );
-}
-
+// ClawModel 直接定義在這個檔案中
 function ClawModel({ clawPos, isClawDown, isWin }) {
-  const clawModel = useGLTF("/claw.glb"); // <-- 使用公開路徑
+  const clawModel = useGLTF("/claw.glb");
   const clawRef = useRef();
 
   useFrame(() => {
@@ -63,6 +47,23 @@ function ClawModel({ clawPos, isClawDown, isWin }) {
       position={[0, 0, 0]}
       rotation={[0, 0, 0]}
     />
+  );
+}
+
+function Modal({ title, text, buttonText, onClose }) {
+  return (
+    <div className="fixed top-0 left-0 w-full h-full bg-[#00000080] flex items-center justify-center z-50">
+      <div className="bg-[#ECEAE1] rounded-2xl shadow-lg p-8 max-w-sm text-center border-4 border-[#CBD7E3]">
+        <h2 className="text-xl font-bold text-[#A77653] mb-4">{title}</h2>
+        <p className="text-[#788DAC] whitespace-pre-line mb-6">{text}</p>
+        <button
+          onClick={onClose}
+          className="bg-[#F7CB82] hover:bg-[#D58E66] text-[#A77653] font-semibold px-4 py-2 rounded-full transition"
+        >
+          {buttonText}
+        </button>
+      </div>
+    </div>
   );
 }
 

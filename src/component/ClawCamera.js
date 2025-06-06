@@ -1,3 +1,5 @@
+"use client";
+
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { PerspectiveCamera, useKeyboardControls } from "@react-three/drei";
@@ -16,16 +18,16 @@ function ClawCamera({ clawPos, setClawPos, isClawDown, setIsClawDown, onFinish }
 
     if (!isClawDown) {
       if (forward && clawPos.z > -limitZ) {
-        setClawPos(prev => ({ ...prev, z: prev.z - speed }));
+        setClawPos((prev) => ({ ...prev, z: prev.z - speed }));
       }
       if (backward && clawPos.z < limitZ) {
-        setClawPos(prev => ({ ...prev, z: prev.z + speed }));
+        setClawPos((prev) => ({ ...prev, z: prev.z + speed }));
       }
       if (right && clawPos.x < limitX) {
-        setClawPos(prev => ({ ...prev, x: prev.x + speed }));
+        setClawPos((prev) => ({ ...prev, x: prev.x + speed }));
       }
       if (left && clawPos.x > -limitX) {
-        setClawPos(prev => ({ ...prev, x: prev.x - speed }));
+        setClawPos((prev) => ({ ...prev, x: prev.x - speed }));
       }
 
       if (jump) {
@@ -40,7 +42,7 @@ function ClawCamera({ clawPos, setClawPos, isClawDown, setIsClawDown, onFinish }
           y: -0.7,
           duration: 2,
           onUpdate: () => {
-            setClawPos(prev => ({ ...prev, y: animationTarget.y }));
+            setClawPos((prev) => ({ ...prev, y: animationTarget.y }));
           },
           onComplete: () => {
             onFinish?.(isWin);
@@ -48,7 +50,7 @@ function ClawCamera({ clawPos, setClawPos, isClawDown, setIsClawDown, onFinish }
               y: 0,
               duration: 1.5,
               onUpdate: () => {
-                setClawPos(prev => ({ ...prev, y: animationTarget.y }));
+                setClawPos((prev) => ({ ...prev, y: animationTarget.y }));
               },
               onComplete: () => {
                 setIsClawDown(false);
