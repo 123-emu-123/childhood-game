@@ -1,22 +1,17 @@
 "use client";
 import Image from "next/image";
-import dynamic from "next/dynamic";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import {
+  RoundedBox,
   CameraControls,
   Environment,
+  useGLTF,
   ContactShadows,
   KeyboardControls,
 } from "@react-three/drei";
-import { Suspense, useState } from "react";
-import ClawCamera from "@/component/ClawCamera";
+import { Suspense, useEffect, useState, useRef } from "react";
+import ClawCamera from "../component/ClawCamera";
 
-// ✅ Dynamic import 避免 SSR 出錯
-const ClawModel = dynamic(() => import("@/component/ClawModel"), {
-  ssr: false,
-});
-
-// ✅ Modal 元件
 function Modal({ title, text, buttonText, onClose }) {
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-[#00000080] flex items-center justify-center z-50">
@@ -34,7 +29,43 @@ function Modal({ title, text, buttonText, onClose }) {
   );
 }
 
-// ✅ 主畫面元件
+function ClawModel({ clawPos, isClawDown, isWin }) {
+  const clawModel = useGLTF("/claw.glb"); // <-- 使用公開路徑
+  const clawRef = useRef();
+
+  useFrame(() => {
+    if (!clawRef.current) return;
+
+    const baseY = 2.85;
+    const clawY = baseY + clawPos.y;
+
+    clawRef.current.traverse((child) => {
+      if (child.name === "claw") {
+        child.position.set(clawPos.x, clawY, clawPos.z);
+      }
+      if (child.name === "clawBase") {
+        child.position.set(clawPos.x, baseY, clawPos.z);
+      }
+      if (child.name === "track") {
+        child.position.set(0, baseY, clawPos.z);
+      }
+      if (child.name === "bear") {
+        child.visible = isWin;
+      }
+    });
+  });
+
+  return (
+    <primitive
+      ref={clawRef}
+      object={clawModel.scene}
+      scale={[0.6, 0.6, 0.6]}
+      position={[0, 0, 0]}
+      rotation={[0, 0, 0]}
+    />
+  );
+}
+
 export default function Home() {
   const [clawPos, setClawPos] = useState({ x: 0, y: 0, z: 0 });
   const [isClawDown, setIsClawDown] = useState(false);
@@ -86,7 +117,6 @@ export default function Home() {
         ]}
       >
         <Canvas>
-          {/* 光源 */}
           <ambientLight intensity={Math.PI / 2} />
           <spotLight
             position={[10, 10, 10]}
@@ -101,7 +131,6 @@ export default function Home() {
             intensity={Math.PI}
           />
 
-          {/* 模型與相機 */}
           <Suspense fallback={null}>
             <ClawModel
               clawPos={clawPos}
