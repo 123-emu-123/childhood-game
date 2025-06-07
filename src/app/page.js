@@ -355,7 +355,7 @@ export default function Home() {
 
       {showResultModal && (
         <Modal
-          title={isWin ? "恭喜中獎！" : "未中獎"}
+          title={isWin ? "成功解救！！" : "解救失敗"}
           text={isWin ? "兔兔鎖定你，一起回家去！" : "嗚嗚嗚...兔兔被持續囚禁了"}
           buttonText="再玩一次"
           onClose={resetGame}
